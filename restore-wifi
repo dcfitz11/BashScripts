@@ -1,0 +1,58 @@
+#!/bin/bash
+
+
+# Purpose: Properly restores the wireless interface specified back to its
+#          original status by restarting networkmanager and the wpa_supplicant.
+
+echo
+echo "************************************************"
+echo "**************RESTORE WIFI**********************"
+echo "************************************************"
+echo
+
+#FUNCTIONS
+Restore_WiFi() {
+	echo
+        echo "Returning your network settings to their original configuration on '${HOSTNAME}'..."
+	airmon-ng stop ${INTERFACE};
+	NetworkManager Restart;
+	wpa_supplicant restart
+}
+
+HOST_NAME=$(hostname)
+
+#     Displays list of wireless adapters
+
+echo
+iwconfig
+
+#    The user is prompted to choose an available wireless adapter
+#    to properly restpre. This uses the 'iwconfig' command,
+#    which is used to extract wireless stats from /proc/net/wireless.
+
+echo
+read -p "Specify wireless adapter name for ${HOST_NAME}: " INTERFACE
+interface_status=$(cat /sys/class/net/${INTERFACE}/operstate)
+
+
+#    The wireless interface is tested using an 'if' statement to
+#    see if the status of wireless interface specified is 'down,' as
+#    defined in the directory path of the variable $interface_status.
+#    If the wireless interface is down, then the Restore_WiFi function
+#    will be executed to bring the interface back up. 
+
+if [[ "$interface_status" = "unknown" ]]
+
+then
+    echo
+    echo "one moment..."
+    Restore_WiFi
+
+#    If the wireless interface does not exist, then an error is displayed
+#    stating that the directory or file was not found. This would
+#    suggest that the user identified the wrong wireless interface.
+
+else
+	echo 
+	echo This interface is already up 
+fi
