@@ -1,0 +1,151 @@
+#!/bin/bash
+
+#
+# Purpose: scans the target using various types of nmap scans, intensities, and other options. 
+#          each scan of the user's target is saved in an output file on the User's desktop for
+#          further review. Error handling is not included in this version. 
+
+
+title="NMAP SCANNER SCRIPT"
+DIRECTORY="/usr/bin/nmap"
+options=("Simple Stealth Port Scan" "Stealth Scan" "Intense Stealth Scan")
+scan_types=("TCP Connect Scan" "SYN Stealth Scan" "OS Detection Scan" "Version Detection Scan" "Null Scan" "FIN Scan" "ACK Scan" "Xmas Scan")
+
+Install_nmap(){
+   sudo apt-get install nmap
+}
+
+echo "$title"
+echo
+if [[ -e $DIRECTORY ]]; then
+read -p "Enter Network Address: " NETWORK
+    else
+      echo "nmap is not installed on this system. Use 'sudo apt-get install nmap'"
+fi
+
+echo
+echo "Enter the Subnet mask for '${NETWORK}.' Your input must be in CIDR notation, such as '/24,' '/16,' '/8,' etc. If nmap is fed the wrong network and subnet, nmap will not correctly scan the network."
+echo
+read -p "Enter Subnet Mask for '${NETWORK}': " SUBNET
+
+host_discovery(){
+ nmap -sn -T5 "${NETWORK}""${SUBNET}"
+}
+
+echo "ping sweeping network..."
+host_discovery
+echo
+read -p "Choose target to enumerate: " TARGET
+
+choose_scan="Choose scan type for ${TARGET}."
+echo
+echo "$choose_scan"
+select scan in "${scan_types[@]}" "Quit"; do
+
+   case "$REPLY" in
+
+    1 ) echo "You picked ${scan}, which is option $REPLY";;
+    2 ) echo "You picked ${scan}, which is option $REPLY";;
+    3 ) echo "You picked ${scan}, which is option $REPLY";;
+    4 ) echo "You picked ${scan}, which is option $REPLY";;
+    5 ) echo "You picked ${scan}, which is option $REPLY";;
+    6 ) echo "You picked ${scan}, which is option $REPLY";;
+    7 ) echo "You picked ${scan}, which is option $REPLY";;
+    8 ) echo "You picked ${scan}, which is option $REPLY";;
+
+    $(( ${#scan_types[@]} )) ) echo "Goodbye!"; break;;
+    *) echo "Invalid option. Try another one.";continue;;
+
+    esac
+    break
+done
+
+echo "You may choose the 'intensity' of your scan from 0 through 5. An input of '0' is
+      paranoid, which will be good for stealth; however, it is extremely slow. An
+      input of '5' is insanely fast, which is good for quickly gathering results;
+      however, detection is likely." 
+read -p "Choose an Intensity from 0 to 5: " INTENSITY
+   case "$INTENSITY" in
+	[0])
+		echo "You chose $INTENSITY."
+
+		;;
+	[1])
+		echo "You chose $INTENSITY."
+
+		;;
+	[2])
+		echo "You chose $INTENSITY."
+
+		;;
+	[3])
+		echo "You chose $INTENSITY."
+
+		;;
+	[4])
+		echo "You chose $INTENSITY."
+
+		;;
+	[5])
+		echo "You chose $INTENSITY."
+
+		;;
+
+	*)
+		echo "Invalid option."
+		exit
+		;;
+esac
+
+TCP_Connect_Scan(){
+   nmap "-T${INTENSITY}" -sT -vv "${TARGET}" -oN Desktop/"${TARGET}"_results.nmap
+}
+SYN_Stealth_Scan(){
+   nmap "-T${INTENSITY}" -sS -vv "${TARGET}" -oN Desktop/"${TARGET}"_results.nmap
+}
+OS_Detection_Scan(){
+   nmap "-T${INTENSITY}" -O --osscan-guess -A -vv "${TARGET}" -oN Desktop/"${TARGET}"_results.nmap
+}
+Version_Detection_Scan(){
+   nmap "-T${INTENSITY}" -sV -vv "${TARGET}" -oN Desktop/"${TARGET}"_results.nmap
+}
+Null_Scan(){
+   nmap "-T${INTENSITY}" -sN -vv "${TARGET}" -oN Desktop/"${TARGET}"_results.nmap
+}
+FIN_Scan(){
+   nmap "-T${INTENSITY}" -sF -vv "${TARGET}" -oN Desktop/"${TARGET}"_results.nmap
+}
+ACK_Scan(){
+   nmap "-T${INTENSITY}" -sA -vv "${TARGET}" -oN Desktop/"${TARGET}"_results.nmap
+}
+XMAS_Scan(){
+   nmap "-T${INTENSITY}" -sX -vv "${TARGET}" -oN Desktop/"${TARGET}"_results.nmap
+}
+
+if [[ ${scan} = "TCP Connect Scan" ]]; then
+   TCP_Connect_Scan
+      elif
+   [[ ${scan} = "SYN Stealth Scan" ]]; then
+   SYN_Stealth_Scan
+      elif
+   [[ ${scan} = "OS Detection Scan" ]]; then
+   OS_Detection_Scan
+      elif
+   [[ ${scan} = "Version Detection Scan" ]]; then
+   Version_Detection_Scan
+      elif
+   [[ ${scan} = "Null Scan" ]]; then
+   Null_Scan
+      elif
+   [[ ${scan} = "FIN Scan" ]]; then
+   FIN_Scan
+      elif
+   [[ ${scan} = "ACK Scan" ]]; then
+   ACK_Scan
+      elif
+   [[ ${scan} = "XMAS Scan" ]]; then
+   XMAS_Scan
+fi
+
+
+
