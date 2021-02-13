@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# Purpose: Enables Monitor Mode on the wireless interface specified. Users are prompted
+#          to choose a wireless interface from a list of available wireless NICs. If the 
+#          wireless interface does not exist, the user will be prompted that the interface
+#          does not exist, which would indicate that the user the user has chosen an
+#          incorrect wireless adapter. 
+
+echo
+echo "************************************************"
+echo "************MONITOR MODE************************"
+echo "************************************************"
+echo
+
+#FUNCTIONS
+Monitor_Mode() {
+    airmon-ng start ${INTERFACE} && airmon-ng check kill
+}
+
+HOST_NAME=$(hostname)
+
+#     Displays list of wireless adapters
+
+echo
+iwconfig
+
+#    The user is prompted to choose an available wireless adapter
+#    to set to monitor mode. This uses the 'iwconfig' command,
+#    which is used to extract wireless stats from /proc/net/wireless.
+
+echo
+read -p "Specify wireless adapter name for ${HOST_NAME}: " INTERFACE
+interface_status=$(cat /sys/class/net/${INTERFACE}/operstate)
+
+
+#    The wireless interface is tested using an 'if' statement to
+#    see if the status of wireless interface specified is 'up,' as
+#    defined in the directory path of the variable $interface_status.
+#    If the wireless interface is up, then the Monitor_Mode function
+#    will be executed.
+if [[ "$interface_status" = "up" ]]
+
+
+then
+    echo
+    echo "one moment..."
+    Monitor_Mode
+    echo
+    echo "$INTERFACE is now in monitor Mode." 
+
+#    If the wireless interface does not exist, then an error is displayed
+#    stating that the directory or file was not found. This would
+#    suggest that the user identified the wrong wireless interface.
+
+else
+	echo
+	echo "$INTERFACE can't be put into monitor mode."
+fi
